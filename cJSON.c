@@ -1217,7 +1217,15 @@ fail:
 
     return NULL;
 }
-
+// 作用：将JSON格式的字符串解析为cJSON结构体树，是整个cJSON库解析JSON的入口函数
+// 输入：const char *value - 待解析的JSON格式字符串（需符合JSON语法规范）
+// 输出：成功返回cJSON根节点指针，失败返回NULL（如字符串格式错误、内存分配失败）
+// 原理：底层调用cJSON_ParseWithOpts()，默认参数解析字符串，逐字符扫描识别节点类型，递归构建树形结构
+// 关键步骤：
+// 1. 调用cJSON_ParseWithOpts()，传入默认参数（return_parse_end=0，require_null_terminated=0）
+// 2. cJSON_ParseWithOpts()会先校验输入合法性，为空则直接返回NULL
+// 3. 初始化解析缓冲区，逐字符扫描字符串构建cJSON节点树
+// 4. 解析完成后返回根节点指针，作为后续操作的入口
 /* Default options for cJSON_Parse */
 CJSON_PUBLIC(cJSON *) cJSON_Parse(const char *value)
 {
