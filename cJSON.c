@@ -1305,7 +1305,16 @@ fail:
 
     return NULL;
 }
-
+// 作用：将cJSON结构体树转换为格式化的JSON字符串，是cJSON库输出JSON的核心函数
+// 输入：cJSON *item - 要转换的cJSON根节点指针
+// 输出：成功返回动态分配的JSON字符串指针，失败返回NULL
+// 原理：底层调用print()函数，传入format=true参数，递归遍历cJSON节点树，拼接带格式的JSON字符串
+// 关键步骤：
+// 1. 调用底层print()函数，指定格式化输出
+// 2. print()函数先初始化打印缓冲区，计算生成字符串所需总长度
+// 3. 递归遍历每个节点，根据节点类型拼接对应JSON语法字符
+// 4. 处理缩进，提升字符串可读性
+// 5. 分配内存并写入拼接后的字符串，返回指针
 /* Render a cJSON item/entity/structure to text. */
 CJSON_PUBLIC(char *) cJSON_Print(const cJSON *item)
 {
