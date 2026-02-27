@@ -248,7 +248,15 @@ static cJSON *cJSON_New_Item(const internal_hooks * const hooks)
 
     return node;
 }
-
+// 作用：递归释放cJSON结构体树占用的所有动态内存，避免内存泄漏，是cJSON库的核心内存管理函数
+// 输入：cJSON *item - 要释放的cJSON节点指针
+// 输出：无
+// 原理：采用后序遍历方式，先释放所有子节点，再释放当前节点，确保无内存残留
+// 关键步骤：
+// 1. 检查节点是否为空，为空则直接返回
+// 2. 递归释放child子节点
+// 3. 释放当前节点的valuestring、string等动态分配的字符串
+// 4. 调用内存释放函数释放当前节点本身的内存
 /* Delete a cJSON structure. */
 CJSON_PUBLIC(void) cJSON_Delete(cJSON *item)
 {
