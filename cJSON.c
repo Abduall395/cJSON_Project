@@ -1225,56 +1225,65 @@ fail:
 
     return NULL;
 }
+口
+/* Default options for cJSON_Parse */
 // 作用：将JSON格式的字符串解析为cJSON结构体树，是整个cJSON库解析JSON的入口函数
 // 输入：const char *value - 待解析的JSON格式字符串（需符合JSON语法规范）
 // 输出：成功返回cJSON根节点指针，失败返回NULL（如字符串格式错误、内存分配失败）
-// 原理：底层调用cJSON_ParseWithOpts()，默认参数解析字符串，逐字符扫描识别节点类型，递归构建树形结构
-// 关键步骤：
-// 1. 调用cJSON_ParseWithOpts()，传入默认参数（return_parse_end=0，require_null_terminated=0）
-// 2. cJSON_ParseWithOpts()会先校验输入合法性，为空则直接返回NULL
-// 3. 初始化解析缓冲区，逐字符扫描字符串构建cJSON节点树
-// 4. 解析完成后返回根节点指针，作为后续操作的入口
-/* Default options for cJSON_Parse */
 CJSON_PUBLIC(cJSON *) cJSON_Parse(const char *value)
 {
+    // 核心逻辑：调用带参数的解析函数，传入默认参数
+    // return_parse_end=0：不返回解析结束位置
+    // require_null_terminated=0：不强制要求字符串以NULL结尾
     return cJSON_ParseWithOpts(value, 0, 0);
 }
-
+//  cJSON_ParseWithOpts 加关键注释
 CJSON_PUBLIC(cJSON *) cJSON_ParseWithLength(const char *value, size_t buffer_length)
 {
+    // 调用核心解析函数，参数说明：
+    // return_parse_end=0 → 不返回解析结束的指针位置
+    // require_null_terminated=0 → 不要求字符串必须以NULL结尾
     return cJSON_ParseWithLengthOpts(value, buffer_length, 0, 0);
 }
-
+// 宏定义：获取两个数值中的最小值，用于后续打印函数的内存拷贝长度限制
 #define cjson_min(a, b) (((a) < (b)) ? (a) : (b))
 
 static unsigned char *print(const cJSON * const item, cJSON_bool format, const internal_hooks * const hooks)
 {
+    // 默认打印缓冲区大小
     static const size_t default_buffer_size = 256;
+    // 打印缓冲区结构体（存储缓冲区指针、长度、偏移量等）
     printbuffer buffer[1];
+    // 最终返回的打印结果字符串指针
     unsigned char *printed = NULL;
 
     memset(buffer, 0, sizeof(buffer));
 
     /* create buffer */
     buffer->buffer = (unsigned char*) hooks->allocate(default_buffer_size);
+    // 初始化缓冲区属性：长度、格式化标记、内存钩子函数
     buffer->length = default_buffer_size;
     buffer->format = format;
     buffer->hooks = *hooks;
+    // 内存分配失败，跳转到fail标签释放资源
     if (buffer->buffer == NULL)
     {
         goto fail;
     }
 
     /* print the value */
+    // 递归打印cJSON节点内容到缓冲区
     if (!print_value(item, buffer))
     {
         goto fail;
     }
+    // 更新缓冲区偏移量
     update_offset(buffer);
 
     /* check if reallocate is available */
     if (hooks->reallocate != NULL)
     {
+        // 扩容缓冲区到实际需要的大小（offset+1 预留NULL终止符位置）
         printed = (unsigned char*) hooks->reallocate(buffer->buffer, buffer->offset + 1);
         if (printed == NULL) {
             goto fail;
@@ -1283,6 +1292,7 @@ static unsigned char *print(const cJSON * const item, cJSON_bool format, const i
     }
     else /* otherwise copy the JSON over to a new buffer */
     {
+        // 无reallocate函数时，新建缓冲区存储结果
         printed = (unsigned char*) hooks->allocate(buffer->offset + 1);
         if (printed == NULL)
         {
@@ -1292,12 +1302,13 @@ static unsigned char *print(const cJSON * const item, cJSON_bool format, const i
         printed[buffer->offset] = '\0'; /* just to be sure */
 
         /* free the buffer */
+        // 释放原缓冲区内存（新缓冲区已存储结果，原缓冲区无用）
         hooks->deallocate(buffer->buffer);
         buffer->buffer = NULL;
     }
 
     return printed;
-
+// 统一释放缓冲区内存，返回NULL
 fail:
     if (buffer->buffer != NULL)
     {
