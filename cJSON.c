@@ -250,35 +250,38 @@ static cJSON *cJSON_New_Item(const internal_hooks * const hooks)
 }
 // 作用：递归释放cJSON结构体树占用的所有动态内存，避免内存泄漏，是cJSON库的核心内存管理函数
 // 输入：cJSON *item - 要释放的cJSON节点指针
-// 输出：无
-// 原理：采用后序遍历方式，先释放所有子节点，再释放当前节点，确保无内存残留
-// 关键步骤：
-// 1. 检查节点是否为空，为空则直接返回
-// 2. 递归释放child子节点
-// 3. 释放当前节点的valuestring、string等动态分配的字符串
-// 4. 调用内存释放函数释放当前节点本身的内存
 /* Delete a cJSON structure. */
 CJSON_PUBLIC(void) cJSON_Delete(cJSON *item)
 {
+    // 空指针校验，避免非法内存访问
+    // 循环遍历当前节点的所有兄弟节点（链表遍历）
     cJSON *next = NULL;
     while (item != NULL)
     {
         next = item->next;
+        // 递归释放子节点
+        // cJSON_IsReference：标记节点为引用类型，无需释放子节点
         if (!(item->type & cJSON_IsReference) && (item->child != NULL))
         {
             cJSON_Delete(item->child);
         }
+        // 释放节点的字符串值（valuestring）
+        // 非引用类型 + valuestring不为空时才释放
         if (!(item->type & cJSON_IsReference) && (item->valuestring != NULL))
         {
             global_hooks.deallocate(item->valuestring);
             item->valuestring = NULL;
         }
+        // 释放节点的键名字符串（string）
+        // cJSON_StringIsConst：标记键名是常量字符串，无需释放；否则释放动态分配的键名
         if (!(item->type & cJSON_StringIsConst) && (item->string != NULL))
         {
             global_hooks.deallocate(item->string);
             item->string = NULL;
         }
+        // 释放当前cJSON节点本身的内存
         global_hooks.deallocate(item);
+        // 处理下一个兄弟节点，继续释放链表中的节点
         item = next;
     }
 }
