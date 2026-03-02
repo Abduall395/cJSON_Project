@@ -202,11 +202,35 @@ CJSON_PUBLIC(cJSON *) cJSON_CreateNull(void);
 CJSON_PUBLIC(cJSON *) cJSON_CreateTrue(void);
 CJSON_PUBLIC(cJSON *) cJSON_CreateFalse(void);
 CJSON_PUBLIC(cJSON *) cJSON_CreateBool(cJSON_bool boolean);
+/**
+ * @brief 创建数字类型的cJSON节点（统一存储为double）
+ * @param num 待存储的数字（int/double均可，自动转double）
+ * @return 成功返回数字节点指针，失败返回NULL
+ * @note 节点type为cJSON_Number，valuedouble存储数值，valueint为兼容字段
+ */
 CJSON_PUBLIC(cJSON *) cJSON_CreateNumber(double num);
+/**
+ * @brief 创建数字类型的cJSON节点（统一存储为double）
+ * @param num 待存储的数字（int/double均可，自动转double）
+ * @return 成功返回数字节点指针，失败返回NULL
+ * @note 节点type为cJSON_Number，valuedouble存储数值，valueint为兼容字段
+ */
 CJSON_PUBLIC(cJSON *) cJSON_CreateString(const char *string);
 /* raw json */
 CJSON_PUBLIC(cJSON *) cJSON_CreateRaw(const char *raw);
+/**
+ * @brief 创建空的JSON数组节点（type标记为cJSON_Array）
+ * @return 成功返回数组节点指针，失败返回NULL（内存分配失败）
+ * @note 1. 返回的节点需调用cJSON_Delete释放；
+ *       2. 初始时child/next/prev均为NULL，需通过cJSON_AddItemToArray添加子元素
+ */
 CJSON_PUBLIC(cJSON *) cJSON_CreateArray(void);
+/**
+ * @brief 创建空的JSON对象节点（type标记为cJSON_Object）
+ * @return 成功返回对象节点指针，失败返回NULL（内存分配失败）
+ * @note 1. 返回的节点需调用cJSON_Delete释放；
+ *       2. 初始时child/next/prev均为NULL，需通过cJSON_AddItemToObject添加子节点
+ */
 CJSON_PUBLIC(cJSON *) cJSON_CreateObject(void);
 
 /* Create a string where valuestring references a string so
