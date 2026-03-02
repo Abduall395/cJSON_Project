@@ -1324,27 +1324,34 @@ fail:
 
     return NULL;
 }
-// 作用：将cJSON结构体树转换为格式化的JSON字符串，是cJSON库输出JSON的核心函数
-// 输入：cJSON *item - 要转换的cJSON根节点指针
+// 作用：格式化打印cJSON节点树为JSON字符串
+// 输入：const cJSON *item - 要打印的cJSON根节点指针
 // 输出：成功返回动态分配的JSON字符串指针，失败返回NULL
-// 原理：底层调用print()函数，传入format=true参数，递归遍历cJSON节点树，拼接带格式的JSON字符串
-// 关键步骤：
-// 1. 调用底层print()函数，指定格式化输出
-// 2. print()函数先初始化打印缓冲区，计算生成字符串所需总长度
-// 3. 递归遍历每个节点，根据节点类型拼接对应JSON语法字符
-// 4. 处理缩进，提升字符串可读性
-// 5. 分配内存并写入拼接后的字符串，返回指针
+// 核心逻辑：调用底层print函数，指定format=true、使用全局内存钩子函数
 /* Render a cJSON item/entity/structure to text. */
 CJSON_PUBLIC(char *) cJSON_Print(const cJSON *item)
 {
+    // 调用底层print函数，参数说明：
+    // item：待打印的cJSON节点
+    // true：开启格式化输出（缩进+换行）
+    // &global_hooks：使用全局默认的内存分配/释放函数
+    // 返回值强转为char*，适配外部公开接口
     return (char*)print(item, true, &global_hooks);
 }
-
+// 作用：无格式打印cJSON节点树为JSON字符串
+// 输入：const cJSON *item - 要打印的cJSON根节点指针
+// 输出：成功返回动态分配的JSON字符串指针，失败返回NULL
+// 核心逻辑：调用底层print函数，指定format=false
 CJSON_PUBLIC(char *) cJSON_PrintUnformatted(const cJSON *item)
 {
     return (char*)print(item, false, &global_hooks);
 }
-
+// 作用：带预分配缓冲区的cJSON打印函数
+// 输入：
+//   const cJSON *item - 要打印的cJSON根节点指针
+//   int prebuffer - 预分配的缓冲区大小
+//   cJSON_bool fmt - 是否格式化输出
+// 输出：成功返回预分配缓冲区指针
 CJSON_PUBLIC(char *) cJSON_PrintBuffered(const cJSON *item, int prebuffer, cJSON_bool fmt)
 {
     printbuffer p = { 0, 0, 0, 0, 0, 0, { 0, 0, 0 } };
@@ -1353,19 +1360,19 @@ CJSON_PUBLIC(char *) cJSON_PrintBuffered(const cJSON *item, int prebuffer, cJSON
     {
         return NULL;
     }
-
+    // 分配预指定大小的缓冲区内存
     p.buffer = (unsigned char*)global_hooks.allocate((size_t)prebuffer);
     if (!p.buffer)
     {
         return NULL;
     }
 
-    p.length = (size_t)prebuffer;
-    p.offset = 0;
-    p.noalloc = false;
-    p.format = fmt;
-    p.hooks = global_hooks;
-
+    p.length = (size_t)prebuffer;// 缓冲区总长度（预分配大小）
+    p.offset = 0;// 缓冲区已使用偏移量
+    p.noalloc = false;// 允许内存扩容
+    p.format = fmt;// 是否格式化输出
+    p.hooks = global_hooks;// 使用全局内存钩子函数
+    // 递归打印cJSON节点内容到预分配缓冲区
     if (!print_value(item, &p))
     {
         global_hooks.deallocate(p.buffer);
