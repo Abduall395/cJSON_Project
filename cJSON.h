@@ -171,10 +171,30 @@ CJSON_PUBLIC(cJSON_bool) cJSON_PrintPreallocated(cJSON *item, char *buffer, cons
 CJSON_PUBLIC(void) cJSON_Delete(cJSON *item);
 
 /* Returns the number of items in an array (or object). */
+/**
+ * @brief 获取JSON数组的元素个数
+ * @param array 目标数组节
+ * @return 成功返回元素个数，失败返回0
+ * @note 遍历array的child链表，统计节点数量
+ */
 CJSON_PUBLIC(int) cJSON_GetArraySize(const cJSON *array);
 /* Retrieve item number "index" from array "array". Returns NULL if unsuccessful. */
+/**
+ * @brief 根据索引获取JSON数组的元素节点
+ * @param array 目标数组节点
+ * @param index 元素索引（从0开始）
+ * @return 成功返回对应索引的节点指针，失败返回NULL（数组为空/索引越界）
+ * @note 遍历child链表，找到第index个节点
+ */
 CJSON_PUBLIC(cJSON *) cJSON_GetArrayItem(const cJSON *array, int index);
 /* Get item "string" from object. Case insensitive. */
+/**
+ * @brief 根据键名获取JSON对象的值节点
+ * @param object 目标对象节点
+ * @param string 要查找的键名
+ * @return 成功返回对应值节点指针，失败返回NULL（对象为空/键名不存在）
+ * @note 遍历object的child链表，对比string字段匹配键名
+ */
 CJSON_PUBLIC(cJSON *) cJSON_GetObjectItem(const cJSON * const object, const char * const string);
 CJSON_PUBLIC(cJSON *) cJSON_GetObjectItemCaseSensitive(const cJSON * const object, const char * const string);
 CJSON_PUBLIC(cJSON_bool) cJSON_HasObjectItem(const cJSON *object, const char *string);
