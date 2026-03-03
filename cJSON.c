@@ -236,7 +236,14 @@ CJSON_PUBLIC(void) cJSON_InitHooks(cJSON_Hooks* hooks)
         global_hooks.reallocate = realloc;
     }
 }
-
+/**
+ * @brief 内部函数：创建新的cJSON节点（所有节点创建函数的底层依赖）
+ * @param hooks 内存管理钩子函数（const修饰，确保不修改钩子函数内容）
+ * @return 成功返回节点指针，失败返回NULL
+ * @note 1. 调用hooks->allocate分配节点内存，兼容自定义内存管理；
+ *       2. 内存分配成功后，用memset将节点所有字段初始化为'\0'（避免脏数据）；
+ *       3. 节点type初始为0（cJSON_Invalid），需上层函数手动设置
+ */
 /* Internal constructor. */
 static cJSON *cJSON_New_Item(const internal_hooks * const hooks)
 {
@@ -1091,7 +1098,13 @@ static cJSON_bool parse_array(cJSON * const item, parse_buffer * const input_buf
 static cJSON_bool print_array(const cJSON * const item, printbuffer * const output_buffer);
 static cJSON_bool parse_object(cJSON * const item, parse_buffer * const input_buffer);
 static cJSON_bool print_object(const cJSON * const item, printbuffer * const output_buffer);
-
+/**
+ * @brief 跳过JSON字符串中的空白字符（空格/制表符/换行/回车）
+ * @param buffer 解析缓冲区（包含待解析字符串、偏移量等）
+ * @return 始终返回true（无失败场景）
+ * @note 1. 符合JSON规范：解析时需忽略空白字符；
+ *       2. 通过移动buffer->offset实现“跳过”，不修改原字符串
+ */
 /* Utility to jump whitespace and cr/lf */
 static parse_buffer *buffer_skip_whitespace(parse_buffer * const buffer)
 {
@@ -1104,7 +1117,7 @@ static parse_buffer *buffer_skip_whitespace(parse_buffer * const buffer)
     {
         return buffer;
     }
-
+    // 遍历字符，直到非空白字符或字符串结束
     while (can_access_at_index(buffer, 0) && (buffer_at_offset(buffer)[0] <= 32))
     {
        buffer->offset++;
@@ -1112,7 +1125,7 @@ static parse_buffer *buffer_skip_whitespace(parse_buffer * const buffer)
 
     if (buffer->offset == buffer->length)
     {
-        buffer->offset--;
+        buffer->offset--;// 偏移量后移，跳过当前空白字符
     }
 
     return buffer;
