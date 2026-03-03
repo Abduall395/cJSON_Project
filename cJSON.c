@@ -3235,3 +3235,34 @@ CJSON_PUBLIC(void) cJSON_free(void *object)
     global_hooks.deallocate(object);
     object = NULL;
 }
+//cJSON核心数据结构分析
+/* 1. 核心结构体（树状双向链表设计）
+   作用：存储JSON单个值，通过指针关联同级/下级节点 */
+typedef struct cJSON_analysis // 加_analysis避免和原有结构体冲突
+{
+    struct cJSON_analysis *next;  // 双向链表：指向同级下一个节点
+    struct cJSON_analysis *prev;  // 双向链表：指向同级上一个节点
+    struct cJSON_analysis *child; // 子节点指针：指向对象/数组的第一个子节点
+    int type;                     // 节点类型（对象/数组/字符串等）
+    char *valuestring;            // 字符串值存储
+    int valueint;                 // 整数值存储（兼容）
+    double valuedouble;           // 数值统一存储
+    char *string;                 // 对象子节点的键名
+} cJSON_analysis;
+
+/* 2. 核心类型宏定义
+    作用：标识cJSON节点的类型，用位运算避免冲突 */
+#define cJSON_Type_Object (1 << 6)   // 对象类型
+#define cJSON_Type_Array  (1 << 5)   // 数组类型
+#define cJSON_Type_String (1 << 4)   // 字符串类型
+#define cJSON_Type_Number (1 << 3)   // 数字类型
+#define cJSON_Type_True   (1 << 1)   // 布尔真
+#define cJSON_Type_False  (1 << 0)   // 布尔假
+#define cJSON_Type_NULL   (1 << 2)   // NULL类型
+
+/* 3. 结构体核心特征总结
+    next/prev：双向链表，管理同级节点；
+    child：树结构，管理下级节点；
+    type：区分值类型；
+    valuestring/valueint/valuedouble：存储不同类型的值；
+    string：存储对象的键名。 */

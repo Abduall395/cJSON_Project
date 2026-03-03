@@ -249,7 +249,23 @@ CJSON_PUBLIC(cJSON *) cJSON_CreateDoubleArray(const double *numbers, int count);
 CJSON_PUBLIC(cJSON *) cJSON_CreateStringArray(const char *const *strings, int count);
 
 /* Append item to the specified array/object. */
+/**
+ * @brief 向JSON数组节点添加元素（核心数组操作函数）
+ * @param array 目标JSON数组节点（必须为cJSON_Array类型）
+ * @param item 要添加的元素节点（所有权转移到array）
+ * @return 成功返回true，失败返回false（数组/节点为空、类型不匹配）
+ * @note 新节点会被添加到array的child链表末尾
+ */
 CJSON_PUBLIC(cJSON_bool) cJSON_AddItemToArray(cJSON *array, cJSON *item);
+/**
+ * @brief 向JSON对象节点添加键值对（核心对象操作函数）
+ * @param object 目标JSON对象节点（必须为cJSON_Object类型）
+ * @param string 键名字符串（常量/动态分配均可，需注意cJSON_StringIsConst标记）
+ * @param item 要添加的值节点（所有权转移到object，释放object时自动释放item）
+ * @return 成功返回true，失败返回false（对象/键名/节点为空、类型不匹配）
+ * @note 1. item的string字段会被设置为传入的string；
+ *       2. 新节点会被添加到object的child链表末尾
+ */
 CJSON_PUBLIC(cJSON_bool) cJSON_AddItemToObject(cJSON *object, const char *string, cJSON *item);
 /* Use this when string is definitely const (i.e. a literal, or as good as), and will definitely survive the cJSON object.
  * WARNING: When this function was used, make sure to always check that (item->type & cJSON_StringIsConst) is zero before
@@ -294,8 +310,23 @@ CJSON_PUBLIC(void) cJSON_Minify(char *json);
 CJSON_PUBLIC(cJSON*) cJSON_AddNullToObject(cJSON * const object, const char * const name);
 CJSON_PUBLIC(cJSON*) cJSON_AddTrueToObject(cJSON * const object, const char * const name);
 CJSON_PUBLIC(cJSON*) cJSON_AddFalseToObject(cJSON * const object, const char * const name);
-CJSON_PUBLIC(cJSON*) cJSON_AddBoolToObject(cJSON * const object, const char * const name, const cJSON_bool boolean);
+CJSON_PUBLIC(cJSON*) cJSON_AddBoolToObject(cJSON * const object, const char * const name, const cJSON_bool boolean);/**
+ * @brief 快捷函数：向JSON对象添加数字类型键值对
+ * @param object 目标JSON对象
+ * @param name 键名
+ * @param value 数字值
+ * @return 成功返回true，失败返回false
+ * @note 内部自动创建数字节点，无需手动调用cJSON_CreateNumber
+ */
 CJSON_PUBLIC(cJSON*) cJSON_AddNumberToObject(cJSON * const object, const char * const name, const double number);
+/**
+ * @brief 快捷函数：向JSON对象添加字符串类型键值对
+ * @param object 目标JSON对象
+ * @param name 键名
+ * @param value 字符串值
+ * @return 成功返回true，失败返回false
+ * @note 内部自动创建字符串节点，无需手动调用cJSON_CreateString
+ */
 CJSON_PUBLIC(cJSON*) cJSON_AddStringToObject(cJSON * const object, const char * const name, const char * const string);
 CJSON_PUBLIC(cJSON*) cJSON_AddRawToObject(cJSON * const object, const char * const name, const char * const raw);
 CJSON_PUBLIC(cJSON*) cJSON_AddObjectToObject(cJSON * const object, const char * const name);
