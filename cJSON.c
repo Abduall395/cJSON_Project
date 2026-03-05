@@ -3279,3 +3279,167 @@ typedef struct cJSON_analysis // 加_analysis避免和原有结构体冲突
     type：区分值类型；
     valuestring/valueint/valuedouble：存储不同类型的值；
     string：存储对象的键名。 */
+
+// 内部工具函数：生成指定长度的缩进字符串
+static char *generate_indent(int level, int indent_step)
+{
+    if (level < 0 || indent_step <= 0)
+    {
+        return (char*)malloc(1); 
+    }
+
+    int indent_len = level * indent_step;
+    char *indent_str = (char*)malloc(indent_len + 1); 
+    if (indent_str == NULL)
+    {
+        return NULL;
+    }
+
+    // 填充空格
+    for (int i = 0; i < indent_len; i++)
+    {
+        indent_str[i] = ' ';
+    }
+    indent_str[indent_len] = '\0'; // 字符串终止符
+
+    return indent_str;
+}
+
+// 内部递归函数：美化打印单个节点
+static cJSON_bool print_pretty_value(const cJSON *item, int level, int indent_step, printbuffer *p)
+{
+    if (item == NULL || p == NULL)
+    {
+        return false;
+    }
+
+    char *indent = generate_indent(level, indent_step);
+    if (indent == NULL)
+    {
+        return false;
+    }
+
+    cJSON_bool ret = false;
+    switch (item->type & 0xFF)
+    {
+        case cJSON_Object:
+            // 打印{ + 换行
+            if (!printbuffer_add(p, "{\n", 2)) break;
+            level++; // 子节点层级+1
+            cJSON *child = item->child;
+            while (child != NULL)
+            {
+                // 打印缩进 + 键名 + : 
+                if (!printbuffer_add(p, indent, strlen(indent)) ||
+                    !printbuffer_add(p, "\"", 1) ||
+                    !printbuffer_add(p, child->string, strlen(child->string)) ||
+                    !printbuffer_add(p, "\": ", 3)) break;
+                
+                // 递归打印子节点值
+                if (!print_pretty_value(child, level, indent_step, p)) break;
+                
+                // 最后一个子节点不加,
+                if (child->next != NULL)
+                {
+                    if (!printbuffer_add(p, ",\n", 2)) break;
+                }
+                else
+                {
+                    if (!printbuffer_add(p, "\n", 1)) break;
+                }
+                child = child->next;
+            }
+            level--; // 层级回退
+            // 打印缩进 + }
+            if (!printbuffer_add(p, indent, strlen(indent)) ||
+                !printbuffer_add(p, "}", 1)) break;
+            ret = true;
+            break;
+
+        case cJSON_Array:
+            // 打印[ + 换行
+            if (!printbuffer_add(p, "[\n", 2)) break;
+            level++;
+            child = item->child;
+            while (child != NULL)
+            {
+                if (!printbuffer_add(p, indent, strlen(indent))) break;
+                if (!print_pretty_value(child, level, indent_step, p)) break;
+                if (child->next != NULL)
+                {
+                    if (!printbuffer_add(p, ",\n", 2)) break;
+                }
+                else
+                {
+                    if (!printbuffer_add(p, "\n", 1)) break;
+                }
+                child = child->next;
+            }
+            level--;
+            if (!printbuffer_add(p, indent, strlen(indent)) ||
+                !printbuffer_add(p, "]", 1)) break;
+            ret = true;
+            break;
+
+        case cJSON_String:
+            // 打印字符串（加引号）
+            if (!printbuffer_add(p, "\"", 1) ||
+                !printbuffer_add(p, item->valuestring, strlen(item->valuestring)) ||
+                !printbuffer_add(p, "\"", 1)) break;
+            ret = true;
+            break;
+
+        case cJSON_Number:
+            // 打印数字
+            char num_buf[64];
+            snprintf(num_buf, 64, "%lf", item->valuedouble);
+            if (!printbuffer_add(p, num_buf, strlen(num_buf))) break;
+            ret = true;
+            break;
+
+        default:
+            ret = false;
+            break;
+    }
+
+    free(indent); // 释放缩进字符串
+    return ret;
+}
+
+// 公开函数：美化打印cJSON节点
+CJSON_PUBLIC(char *) cJSON_Print_Pretty(const cJSON *item, int indent_step)
+{
+    if (item == NULL || indent_step < 0)
+    {
+        return NULL;
+    }
+
+    // 初始化打印缓冲区
+    printbuffer p = {0};
+    p.buffer = (char*)malloc(256);
+    if (p.buffer == NULL)
+    {
+        return NULL;
+    }
+    p.length = 256;
+    p.offset = 0;
+    p.noalloc = false;
+
+    // 调用递归函数打印
+    if (!print_pretty_value(item, 0, indent_step, &p))
+    {
+        free(p.buffer);
+        return NULL;
+    }
+
+    // 扩容到实际大小 + 添加终止符
+    char *result = (char*)realloc(p.buffer, p.offset + 1);
+    if (result == NULL)
+    {
+        free(p.buffer);
+        return NULL;
+    }
+    result[p.offset] = '\0';
+
+    return result;
+}
